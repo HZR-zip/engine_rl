@@ -1,0 +1,39 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.egg-info/
+.Python
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Packaging and test/tool caches
+build/
+dist/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Isaac Lab / training outputs
+logs/
+wandb/
+*.pt
+*.pth
+*.onnx
+*.mnn
+
+# Locally generated robot USD and conversion artifacts
+/assets/t800/t800.usd
+/assets/t800/t800.usd.*
+/assets/t800/urdf/
+
+# Editors and operating systems
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

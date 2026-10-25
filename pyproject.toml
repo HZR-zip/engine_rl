@@ -1,0 +1,15 @@
+[build-system]
+requires = ["setuptools>=64"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "t800-rl"
+version = "0.1.0"
+description = "Isaac Lab reinforcement-learning tasks for the EngineAI T800 humanoid"
+requires-python = ">=3.10"
+
+[tool.setuptools.packages.find]
+where = ["source"]
+
+[tool.setuptools.package-data]
+t800_rl = ["**/*"]
