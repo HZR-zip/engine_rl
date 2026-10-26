@@ -37,3 +37,8 @@ wandb/
 .idea/
 .DS_Store
 Thumbs.db
+
+# Local G1 USD conversion output
+/assets/g1/*.usd
+/assets/g1/*.usd.*
+/assets/g1/urdf/

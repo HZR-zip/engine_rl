@@ -19,7 +19,7 @@ simulation_app = app_launcher.app
 
 import gymnasium as gym
 import torch
-from rsl_rl.runners import OnPolicyRunner
+from t800_rl.cmoe.runner import runner_class
 
 from isaaclab_tasks.utils.parse_cfg import load_cfg_from_registry, parse_env_cfg
 from isaaclab_rl.rsl_rl import RslRlVecEnvWrapper
@@ -32,10 +32,11 @@ def main():
     env_cfg = parse_env_cfg(args_cli.task, device=args_cli.device, num_envs=args_cli.num_envs)
     env_cfg.observations.policy.enable_corruption = False
     agent_cfg = load_cfg_from_registry(args_cli.task, "rsl_rl_cfg_entry_point")
+    agent_cfg.device = args_cli.device
     env = gym.make(args_cli.task, cfg=env_cfg)
     env = RslRlVecEnvWrapper(env, clip_actions=agent_cfg.clip_actions)
-    runner = OnPolicyRunner(env, agent_cfg.to_dict(), log_dir=None, device=agent_cfg.device)
-    runner.load(os.path.abspath(args_cli.checkpoint))
+    runner = runner_class(agent_cfg.to_dict())(env, agent_cfg.to_dict(), log_dir=None, device=agent_cfg.device)
+    runner.load(os.path.abspath(args_cli.checkpoint), load_optimizer=False)
     policy = runner.get_inference_policy(device=env.unwrapped.device)
     obs = env.get_observations()
     while simulation_app.is_running():

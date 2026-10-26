@@ -5,6 +5,8 @@
 机器人模型、奖励、观测和 PPO 超参数等具体内容不都写在这里，需查看任务配置文件。
 """
 
+from datetime import datetime
+import json
 import argparse
 import os
 import sys
@@ -36,9 +38,9 @@ simulation_app = app_launcher.app
 # 以下导入放在 Simulation App 启动之后是 Isaac Lab 脚本的常见约定。
 import gymnasium as gym
 import torch
-from rsl_rl.runners import OnPolicyRunner
+from t800_rl.cmoe.runner import runner_class
 
-from isaaclab.envs import ManagerBasedRLEnv
+from isaaclab.utils.io import dump_yaml
 from isaaclab_tasks.utils.parse_cfg import load_cfg_from_registry, parse_env_cfg
 from isaaclab_rl.rsl_rl import RslRlVecEnvWrapper
 import t800_rl.tasks  # noqa: F401
@@ -53,6 +55,7 @@ def main():
     # 从 Gym 注册信息中读取该任务对应的 RSL-RL 配置（这里的配置入口名为
     # rsl_rl_cfg_entry_point）。agent_cfg 包含 PPO、网络、学习率、训练轮数等设置。
     agent_cfg = load_cfg_from_registry(args_cli.task, "rsl_rl_cfg_entry_point")
+    agent_cfg.device = args_cli.device
 
     # 用户显式传入 seed/最大迭代次数时覆盖配置文件；否则保留配置里的默认值。
     agent_cfg.seed = args_cli.seed if args_cli.seed is not None else agent_cfg.seed
@@ -60,8 +63,12 @@ def main():
         agent_cfg.max_iterations = args_cli.max_iterations
 
     # 训练日志和模型检查点放在项目当前目录下的 logs/rsl_rl/<实验名>。
-    log_root = os.path.abspath(os.path.join("logs", "rsl_rl", agent_cfg.experiment_name))
+    log_root = os.path.abspath(os.path.join("logs", "rsl_rl", agent_cfg.experiment_name, datetime.now().strftime("%Y-%m-%d_%H-%M-%S_%f")))
     os.makedirs(log_root, exist_ok=True)
+    env_cfg.seed = agent_cfg.seed
+    dump_yaml(os.path.join(log_root, "env_config.yaml"), env_cfg)
+    with open(os.path.join(log_root, "agent_config.json"), "w") as handle:
+        json.dump(agent_cfg.to_dict(), handle, indent=2)
 
     # gym.make 根据 task ID 创建环境；开启相机时请求 RGB 图像渲染，否则不创建相机渲染输出。
     env = gym.make(args_cli.task, cfg=env_cfg, render_mode="rgb_array" if args_cli.enable_cameras else None)
@@ -71,7 +78,7 @@ def main():
     env = RslRlVecEnvWrapper(env, clip_actions=agent_cfg.clip_actions)
 
     # OnPolicyRunner 是 RSL-RL 的训练循环管理器：接收环境、算法配置、日志目录和设备。
-    runner = OnPolicyRunner(env, agent_cfg.to_dict(), log_dir=log_root, device=agent_cfg.device)
+    runner = runner_class(agent_cfg.to_dict())(env, agent_cfg.to_dict(), log_dir=log_root, device=agent_cfg.device)
     if args_cli.checkpoint:
         # 加载已有 checkpoint 中的策略/训练状态；不传该参数时从头开始训练。
         runner.load(args_cli.checkpoint)

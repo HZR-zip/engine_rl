@@ -8,8 +8,16 @@ version = "0.1.0"
 description = "Isaac Lab reinforcement-learning tasks for the EngineAI T800 humanoid"
 requires-python = ">=3.10"
 
+[project.optional-dependencies]
+cmoe = ["rsl-rl-lib==3.0.1", "tensorboard>=2.14"]
+
 [tool.setuptools.packages.find]
-where = ["source"]
+where = ["source/t800_rl"]
+include = ["t800_rl*"]
+namespaces = false
+
+[tool.setuptools.exclude-package-data]
+"*" = ["*.pyc", "**/*.pyc"]
 
 [tool.setuptools.package-data]
-t800_rl = ["**/*"]
+"t800_rl.cmoe" = ["licenses/*.txt"]

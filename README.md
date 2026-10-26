@@ -2,13 +2,49 @@
 
 Isaac Lab extension scaffold for training a T800 velocity-tracking policy with RSL-RL PPO. The initial task is a flat-ground baseline, not a paper reproduction yet. The USD model, joint/link mapping, actuator specifications, and paper-specific MDP/training values must be supplied before a meaningful run.
 
+## CMoE G1 Reference
+
+The authors' Isaac Gym implementation, including its G1 task, modified `legged_gym`, modified `rsl_rl`, and robot assets, is vendored under [`references/cmoe_isaacgym/`](references/cmoe_isaacgym/). It is pinned to the upstream commit documented in [`UPSTREAM.md`](references/cmoe_isaacgym/UPSTREAM.md) and remains separate from the Isaac Lab T800 package. Use a dedicated Isaac Gym Preview 4 environment; see the vendored upstream README and `UPSTREAM.md` for setup and launch instructions.
+
+## G1 Isaac Lab CMoE Port
+
+The G1 task now selects the CMoE policy, auxiliary estimators and custom PPO
+runner. Robot/action/observation contracts are aligned at code level. The exact
+author fixed-upper-body URDF is used; it has 12 movable leg joints. The actor
+has 527 inputs and the privileged critic has 128. See CMOE_PORT.md for
+architecture, intentional upstream corrections and remaining reproduction gaps.
+
+CPU-only setup and validation (no Isaac Sim import):
+
+    python -m pip install -e '.[cmoe]'
+    python -m unittest discover -s tests -p test_cmoe_cpu.py -v
+
+On a GPU host with the supported Isaac Lab environment, first reinstall this
+extension, then convert the corrected asset and run a small startup check:
+
+    python scripts/convert_g1.py --headless --force
+    python scripts/train.py --task G1-CMoE-Velocity-Rough-v0 --headless --num_envs 4 --max_iterations 1
+    python scripts/play.py --task G1-CMoE-Velocity-Rough-v0 --checkpoint /path/to/model.pt --num_envs 1
+
+The generated asset is assets/g1/g1_cmoe.usd (G1_USD_PATH may override it).
+Training creates a separate timestamped directory under logs/rsl_rl/g1_cmoe_lab/.
+Resume with the same training command plus --checkpoint /path/to/model.pt;
+--max_iterations specifies additional iterations on resume. All three optimizer
+states are restored. Original Gym checkpoints need explicit conversion and are
+not accepted as Lab CMoE training checkpoints.
+
+Six CPU tests pass, including a real RSL-RL update over a tensor-only test
+environment and continuation after checkpoint restore. This is not a robot
+simulation test. USD conversion, standing/joint control, live Lab training,
+terrain/reward parity and paper metrics remain unvalidated. See WORK_LOG.md.
+
 ## Environment
 
-The current environment was detected as Isaac Lab 2.3.2.post1, Isaac Sim 5.1.0, Python 3.11, and RSL-RL from the installed Isaac Lab environment. Activate that environment before installing or launching this extension.
+The current task API targets Isaac Lab 2.3.x, Isaac Sim 5.1, Python 3.11 and rsl-rl-lib 3.0.1. The CPU test environment does not expose an importable isaaclab package. Activate and verify the supported Isaac Lab environment on the training host before launching simulation; package metadata alone is not a startup check.
 
 ```bash
 conda activate isaaclab
-cd /root/EngineAI_T800
+cd /path/to/engine_rl
 python -m pip install -e .
 ```
 
@@ -40,7 +76,11 @@ Before training, edit `source/t800_rl/t800_rl/tasks/locomotion/velocity/env_cfg.
 - Generic joint selection with the intended policy joint list and a stable order.
 - Baseline observations, rewards, randomization, command ranges, and PPO settings with the paper's exact definitions when reproducing a paper.
 
-Check the model in Isaac Sim and validate a single robot's standing pose and joint control before scaling up parallel environments. The environment currently reports no usable NVIDIA driver (`torch.cuda.is_available()` is false), so GPU simulation/training will not run until GPU access is available.
+Check the model in Isaac Sim and validate a single robot's standing pose and
+joint control before scaling up environments. Per the user's host constraint,
+this work is CPU-only; GPU simulation and training validation are deferred to
+the training host. Tool-execution GPU probes do not establish the user's local
+hardware capability.
 
 ## Train and evaluate
 

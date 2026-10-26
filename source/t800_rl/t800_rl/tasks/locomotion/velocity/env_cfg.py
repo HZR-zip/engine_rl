@@ -34,11 +34,6 @@ T800_BASE_LINK = os.environ.get("T800_BASE_LINK", "LINK_BASE")
 
 
 def _t800_cfg() -> ArticulationCfg:
-    if not T800_USD_PATH.is_file():
-        raise FileNotFoundError(
-            f"T800 USD not found: {T800_USD_PATH}. Set T800_USD_PATH to the robot USD file; "
-            "then verify the joint/link names and actuator limits in env_cfg.py."
-        )
     return ArticulationCfg(
         prim_path="{ENV_REGEX_NS}/Robot",
         spawn=sim_utils.UsdFileCfg(
